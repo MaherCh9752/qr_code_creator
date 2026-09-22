@@ -1,0 +1,36 @@
+name: qr_code_creator
+description: A free, unlimited, custom QR Code generator (Flutter) with logo, colors, shapes, and PNG/SVG/PDF export.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Raw QR matrix generation (gives us full control to draw custom shapes)
+  qr: ^3.0.2
+
+  # Logo image handling
+  image_picker: ^1.1.2
+  image: ^4.1.7
+
+  # Color picker UI
+  flutter_colorpicker: ^1.1.0
+
+  # File export / sharing
+  path_provider: ^2.1.4
+  share_plus: ^10.0.2
+  pdf: ^3.11.1
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
