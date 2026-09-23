@@ -49,9 +49,14 @@ class QrPreviewState extends State<QrPreview> {
     }
     if (identical(bytes, _lastLogoBytes)) return;
     _lastLogoBytes = bytes;
-    decodeImageBytes(bytes).then((img) {
-      if (mounted) setState(() => _logoImage = img);
-    });
+    decodeImageBytes(bytes).then(
+      (img) {
+        if (mounted) setState(() => _logoImage = img);
+      },
+      onError: (Object _) {
+        // Undecodable logo bytes — preview simply renders without a logo.
+      },
+    );
   }
 
   QrImage? get qrCode {

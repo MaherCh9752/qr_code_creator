@@ -256,6 +256,10 @@ class DesignPanel extends StatelessWidget {
                   ),
                 ],
               ]),
+              const SizedBox(height: 4),
+              const Text(
+                  'Supported: PNG, JPEG, GIF, WebP, BMP, ICO, TIFF',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: style.logoBytes != null

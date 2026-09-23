@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/qr_content_builder.dart';
 import '../models/qr_style.dart';
 import '../utils/export_utils.dart';
+import '../utils/logo_image.dart';
 import '../widgets/design_panel.dart';
 import '../widgets/qr_preview.dart';
 
@@ -109,11 +111,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _pickLogo() async {
-    final picker = ImagePicker();
-    final img = await picker.pickImage(source: ImageSource.gallery);
-    if (img == null) return;
-    final bytes = await img.readAsBytes();
-    setState(() => _style.logoBytes = bytes);
+    try {
+      final picker = ImagePicker();
+      final img = await picker.pickImage(source: ImageSource.gallery);
+      if (img == null) return;
+      final bytes = await img.readAsBytes();
+      final normalized = await normalizeLogoBytes(bytes);
+      if (!mounted) return;
+      setState(() => _style.logoBytes = normalized);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not add logo: $e')),
+      );
+    }
   }
 
   @override
@@ -129,8 +140,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 3, child: formPanel),
-                Expanded(flex: 2, child: previewPanel),
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(child: formPanel),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: SingleChildScrollView(child: previewPanel),
+                ),
               ],
             );
           }
@@ -200,19 +217,73 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _showExportError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Export failed: $e')),
+    );
+  }
+
+  /// Shows a modal progress spinner while [work] runs, then dismisses it
+  /// before the exception (if any) propagates to the caller.
+  Future<T?> _withProgress<T>(Future<T> Function() work) async {
+    BuildContext? dialogCtx;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        dialogCtx = ctx;
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+    // Let the dialog transition fade in so the spinner is visible before
+    // heavy (potentially frame-blocking) work starts.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    try {
+      return await work();
+    } finally {
+      final ctx = dialogCtx;
+      if (ctx != null && ctx.mounted) Navigator.of(ctx).pop();
+    }
+  }
+
   Future<void> _exportPng() async {
-    final bytes = await _previewKey.currentState!.captureAsPng(_resolution);
-    await ExportUtils.savePngAndShare(bytes);
+    try {
+      final bytes = await _withProgress(
+          () => _previewKey.currentState!.captureAsPng(_resolution));
+      if (bytes == null) return;
+      await ExportUtils.savePngAndShare(bytes);
+    } catch (e) {
+      _showExportError(e);
+    }
   }
 
   Future<void> _exportSvg() async {
-    final svg = ExportUtils.buildSvg(_payload, _style, size: _resolution);
-    await ExportUtils.saveSvgAndShare(svg);
+    try {
+      final svg = ExportUtils.buildSvg(_payload, _style, size: _resolution);
+      await ExportUtils.saveSvgAndShare(svg);
+    } catch (e) {
+      _showExportError(e);
+    }
   }
 
   Future<void> _exportPdf() async {
-    final bytes = await _previewKey.currentState!.captureAsPng(_resolution);
-    await ExportUtils.savePdfAndShare(bytes);
+    try {
+      final pdfBytes = await _withProgress(() async {
+        // Cap the page raster at 2048px: the image is placed at 400pt
+        // (~5.6in) on A4, so 2048px is ~370 DPI (print-perfect) while
+        // 4000px quadruples PNG-encode time and froze the web build.
+        final png = await _previewKey.currentState!
+            .captureAsPng(_resolution > 2048 ? 2048 : _resolution);
+        // Yield a frame so the spinner animates between heavy steps.
+        await SchedulerBinding.instance.endOfFrame;
+        return ExportUtils.buildPdf(png);
+      });
+      if (pdfBytes == null) return;
+      await ExportUtils.deliverPdf(pdfBytes);
+    } catch (e) {
+      _showExportError(e);
+    }
   }
 
   Widget _buildFormPanel() {

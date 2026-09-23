@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show compute, kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../models/qr_style.dart';
 import '../widgets/qr_painter.dart';
+import 'browser_download_html.dart'
+    if (dart.library.io) 'browser_download_stub.dart' as browser_download;
 
 class ExportUtils {
   static Future<File> _writeTemp(String filename, Uint8List bytes) async {
@@ -19,6 +22,10 @@ class ExportUtils {
 
   static Future<void> savePngAndShare(Uint8List pngBytes,
       {String filename = 'qrcode.png'}) async {
+    if (kIsWeb) {
+      browser_download.downloadBytes(pngBytes, filename, 'image/png');
+      return;
+    }
     final file = await _writeTemp(filename, pngBytes);
     await Share.shareXFiles([XFile(file.path)], text: 'My QR Code');
   }
@@ -363,14 +370,18 @@ class ExportUtils {
   static Future<void> saveSvgAndShare(String svgContent,
       {String filename = 'qrcode.svg'}) async {
     final bytes = Uint8List.fromList(utf8.encode(svgContent));
+    if (kIsWeb) {
+      browser_download.downloadBytes(bytes, filename, 'image/svg+xml');
+      return;
+    }
     final file = await _writeTemp(filename, bytes);
     await Share.shareXFiles([XFile(file.path)], text: 'My QR Code (vector)');
   }
 
-  /// Wraps a high-res PNG render into a single-page PDF, sized to fit an
-  /// A4-ish page for print-ready output.
-  static Future<void> savePdfAndShare(Uint8List pngBytes,
-      {String filename = 'qrcode.pdf'}) async {
+  /// Wraps a high-res PNG render into a single-page A4 PDF. Static and
+  /// async so it can run through [compute] off the main isolate (native),
+  /// keeping the UI responsive while the document is assembled.
+  static Future<Uint8List> buildPdf(Uint8List pngBytes) async {
     final doc = pw.Document();
     final image = pw.MemoryImage(pngBytes);
     doc.addPage(
@@ -381,8 +392,26 @@ class ExportUtils {
         ),
       ),
     );
-    final bytes = await doc.save();
-    final file = await _writeTemp(filename, bytes);
+    return doc.save();
+  }
+
+  /// Delivers an already-built PDF (browser download on web, share sheet
+  /// elsewhere). Kept separate from [buildPdf] so progress UI can cover only
+  /// the heavy generation step.
+  static Future<void> deliverPdf(Uint8List pdfBytes,
+      {String filename = 'qrcode.pdf'}) async {
+    if (kIsWeb) {
+      browser_download.downloadBytes(pdfBytes, filename, 'application/pdf');
+      return;
+    }
+    final file = await _writeTemp(filename, pdfBytes);
     await Share.shareXFiles([XFile(file.path)], text: 'My QR Code (PDF)');
+  }
+
+  /// Convenience wrapper: build + deliver in one call.
+  static Future<void> savePdfAndShare(Uint8List pngBytes,
+      {String filename = 'qrcode.pdf'}) async {
+    final pdfBytes = await compute(buildPdf, pngBytes);
+    await deliverPdf(pdfBytes, filename: filename);
   }
 }
