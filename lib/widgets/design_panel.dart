@@ -54,6 +54,7 @@ class DesignPanel extends StatelessWidget {
         _SectionCard(
           icon: Icons.palette_outlined,
           title: 'Colors',
+          hint: 'Dark modules on a light background scan most reliably.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -103,22 +104,27 @@ class DesignPanel extends StatelessWidget {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: style.gradientType == QrGradientType.linear
-                    ? Column(
+                    ? MergeSemantics(
                         key: const ValueKey('angle'),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              'Gradient angle: ${style.gradientAngleDeg.round()}°'),
-                          Slider(
-                            min: 0,
-                            max: 360,
-                            divisions: 24,
-                            value: style.gradientAngleDeg,
-                            label: '${style.gradientAngleDeg.round()}°',
-                            onChanged: (v) =>
-                                _set(() => style.gradientAngleDeg = v),
-                          ),
-                        ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                'Gradient angle: ${style.gradientAngleDeg.round()}°'),
+                            Slider(
+                              min: 0,
+                              max: 360,
+                              divisions: 24,
+                              value: style.gradientAngleDeg,
+                              label:
+                                  '${style.gradientAngleDeg.round()}°',
+                              semanticFormatterCallback: (v) =>
+                                  '${v.round()} degrees',
+                              onChanged: (v) =>
+                                  _set(() => style.gradientAngleDeg = v),
+                            ),
+                          ],
+                        ),
                       )
                     : const SizedBox.shrink(key: ValueKey('no-angle')),
               ),
@@ -175,6 +181,7 @@ class DesignPanel extends StatelessWidget {
         _SectionCard(
           icon: Icons.category_outlined,
           title: 'Shapes',
+          hint: 'Square dots and eyes scan most reliably.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -208,24 +215,40 @@ class DesignPanel extends StatelessWidget {
                     .toList(),
                 onChanged: (v) => _set(() => style.eyeBallShape = v!),
               ),
-              Text('Eye stroke: ${style.eyeStrokeRatio.toStringAsFixed(2)}×'),
-              Slider(
-                min: 0.5,
-                max: 1.5,
-                divisions: 10,
-                value: style.eyeStrokeRatio,
-                label: '${style.eyeStrokeRatio.toStringAsFixed(2)}×',
-                onChanged: (v) => _set(() => style.eyeStrokeRatio = v),
-              ),
-              Text(
-                  'Eye corner roundness: ${style.eyeCornerRatio.toStringAsFixed(2)}×'),
-              Slider(
-                min: 0,
-                max: 2,
-                divisions: 10,
-                value: style.eyeCornerRatio,
-                label: '${style.eyeCornerRatio.toStringAsFixed(2)}×',
-                onChanged: (v) => _set(() => style.eyeCornerRatio = v),
+              MergeSemantics(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Eye stroke: ${style.eyeStrokeRatio.toStringAsFixed(2)}×'),
+                    Slider(
+                      min: 0.5,
+                      max: 1.5,
+                      divisions: 10,
+                      value: style.eyeStrokeRatio,
+                      label:
+                          '${style.eyeStrokeRatio.toStringAsFixed(2)}×',
+                      semanticFormatterCallback: (v) =>
+                          '${v.toStringAsFixed(2)} times',
+                      onChanged: (v) =>
+                          _set(() => style.eyeStrokeRatio = v),
+                    ),
+                    Text(
+                        'Eye corner roundness: ${style.eyeCornerRatio.toStringAsFixed(2)}×'),
+                    Slider(
+                      min: 0,
+                      max: 2,
+                      divisions: 10,
+                      value: style.eyeCornerRatio,
+                      label:
+                          '${style.eyeCornerRatio.toStringAsFixed(2)}×',
+                      semanticFormatterCallback: (v) =>
+                          '${v.toStringAsFixed(2)} times',
+                      onChanged: (v) =>
+                          _set(() => style.eyeCornerRatio = v),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -233,6 +256,7 @@ class DesignPanel extends StatelessWidget {
         _SectionCard(
           icon: Icons.image_outlined,
           title: 'Logo',
+          hint: 'Logos cover part of the code — pair large logos with higher error correction.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -257,9 +281,11 @@ class DesignPanel extends StatelessWidget {
                 ],
               ]),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                   'Supported: PNG, JPEG, GIF, WebP, BMP, ICO, TIFF',
-                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: style.logoBytes != null
@@ -267,14 +293,25 @@ class DesignPanel extends StatelessWidget {
                         key: const ValueKey('logo-opts'),
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                              'Logo size: ${(style.logoSizeRatio * 100).round()}%'),
-                          Slider(
-                            min: 0.1,
-                            max: 0.35,
-                            value: style.logoSizeRatio,
-                            onChanged: (v) =>
-                                _set(() => style.logoSizeRatio = v),
+                          MergeSemantics(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                    'Logo size: ${(style.logoSizeRatio * 100).round()}%'),
+                                Slider(
+                                  min: 0.1,
+                                  max: 0.35,
+                                  value: style.logoSizeRatio,
+                                  label:
+                                      '${(style.logoSizeRatio * 100).round()}%',
+                                  semanticFormatterCallback: (v) =>
+                                      '${(v * 100).round()} percent',
+                                  onChanged: (v) =>
+                                      _set(() => style.logoSizeRatio = v),
+                                ),
+                              ],
+                            ),
                           ),
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
@@ -295,14 +332,25 @@ class DesignPanel extends StatelessWidget {
                             onChanged: (v) =>
                                 _set(() => style.logoShape = v!),
                           ),
-                          Text(
-                              'Logo border: ${(style.logoBorderWidth * 100).toStringAsFixed(1)}%'),
-                          Slider(
-                            min: 0,
-                            max: 0.08,
-                            value: style.logoBorderWidth,
-                            onChanged: (v) =>
-                                _set(() => style.logoBorderWidth = v),
+                          MergeSemantics(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                    'Logo border: ${(style.logoBorderWidth * 100).toStringAsFixed(1)}%'),
+                                Slider(
+                                  min: 0,
+                                  max: 0.08,
+                                  value: style.logoBorderWidth,
+                                  label:
+                                      '${(style.logoBorderWidth * 100).toStringAsFixed(1)}%',
+                                  semanticFormatterCallback: (v) =>
+                                      '${(v * 100).toStringAsFixed(1)} percent',
+                                  onChanged: (v) => _set(
+                                      () => style.logoBorderWidth = v),
+                                ),
+                              ],
+                            ),
                           ),
                           if (style.logoBorderWidth > 0)
                             _colorTile(
@@ -321,33 +369,58 @@ class DesignPanel extends StatelessWidget {
         _SectionCard(
           icon: Icons.tune_outlined,
           title: 'Advanced',
+          hint: 'Tune scannability vs. style. When in doubt, keep defaults.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                  'Quiet zone: ${style.quietModules} modules (4 recommended)'),
-              Slider(
-                min: 0,
-                max: 8,
-                divisions: 8,
-                value: style.quietModules.toDouble(),
-                label: '${style.quietModules}',
-                onChanged: (v) => _set(() => style.quietModules = v.round()),
+              MergeSemantics(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Quiet zone: ${style.quietModules} modules (4 recommended)'),
+                    Slider(
+                      min: 0,
+                      max: 8,
+                      divisions: 8,
+                      value: style.quietModules.toDouble(),
+                      label: '${style.quietModules}',
+                      semanticFormatterCallback: (v) =>
+                          '${v.round()} modules',
+                      onChanged: (v) =>
+                          _set(() => style.quietModules = v.round()),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                  'Outer corner radius: ${(style.cornerRadiusRatio * 100).round()}%'),
-              Slider(
-                min: 0,
-                max: 0.2,
-                value: style.cornerRadiusRatio,
-                label: '${(style.cornerRadiusRatio * 100).round()}%',
-                onChanged: (v) => _set(() => style.cornerRadiusRatio = v),
+              MergeSemantics(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Outer corner radius: ${(style.cornerRadiusRatio * 100).round()}%'),
+                    Slider(
+                      min: 0,
+                      max: 0.2,
+                      value: style.cornerRadiusRatio,
+                      label:
+                          '${(style.cornerRadiusRatio * 100).round()}%',
+                      semanticFormatterCallback: (v) =>
+                          '${(v * 100).round()} percent',
+                      onChanged: (v) =>
+                          _set(() => style.cornerRadiusRatio = v),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                     labelText:
-                        'Error correction (higher = more scan-resistant)'),
+                        'Error correction (higher = more scan-resistant)',
+                    helperText:
+                        'Higher error-correction allows a bigger logo but reduces readable area.',
+                    helperMaxLines: 2),
                 value: style.errorCorrectionLevel,
                 items: const [
                   DropdownMenuItem(value: 'L', child: Text('L — ~7%')),
@@ -377,20 +450,34 @@ class DesignPanel extends StatelessWidget {
       BuildContext context,
       {Key? key}) {
     final scheme = Theme.of(context).colorScheme;
+    final hex =
+        '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
     return ListTile(
       key: key,
       contentPadding: EdgeInsets.zero,
       title: Text(label),
-      trailing: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => _pickColor(context, color, onPicked),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color,
-            border: Border.all(color: scheme.outline),
-            shape: BoxShape.circle,
+      trailing: Semantics(
+        button: true,
+        label: '$label color',
+        value: hex,
+        hint: 'Double-tap to pick a new color',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => _pickColor(context, color, onPicked),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color,
+                  border: Border.all(color: scheme.outline),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -401,30 +488,35 @@ class DesignPanel extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String hint;
   final Widget child;
 
-  const _SectionCard(
-      {required this.icon, required this.title, required this.child});
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    required this.hint,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Icon(icon, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(title, style: theme.textTheme.titleSmall),
-            ]),
-            const SizedBox(height: 12),
-            child,
-          ],
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: Icon(icon, size: 20, color: theme.colorScheme.primary),
+        title: Text(title, style: theme.textTheme.titleSmall),
+        subtitle: Text(
+          hint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
+        initiallyExpanded: true,
+        childrenPadding:
+            const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        children: [child],
       ),
     );
   }

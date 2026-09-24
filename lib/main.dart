@@ -5,28 +5,40 @@ void main() {
   runApp(const QrCodeCreatorApp());
 }
 
-class QrCodeCreatorApp extends StatelessWidget {
+class QrCodeCreatorApp extends StatefulWidget {
   const QrCodeCreatorApp({super.key});
+
+  @override
+  State<QrCodeCreatorApp> createState() => _QrCodeCreatorAppState();
+}
+
+class _QrCodeCreatorAppState extends State<QrCodeCreatorApp> {
+  // System theme by default; user can override via the AppBar toggle.
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void _setThemeMode(ThemeMode mode) => setState(() => _themeMode = mode);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'QR Code Creator',
       debugShowCheckedModeBanner: false,
-      // Cohesive M3 theme; light + dark via ColorScheme (no hardcoded
-      // surface colors in panels — see DesignPanel / preview).
       theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
         useMaterial3: true,
-        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
         useMaterial3: true,
-        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
       ),
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      themeMode: _themeMode,
+      home: HomeScreen(
+        themeMode: _themeMode,
+        onThemeModeChanged: _setThemeMode,
+      ),
     );
   }
 }
